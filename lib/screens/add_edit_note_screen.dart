@@ -101,64 +101,66 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
       appBar: CustomAppBar(
         title: widget.note == null ? 'Añadir Nota' : 'Editar Nota',
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            CustomTextField(
-              controller: titleController,
-              label: 'Titulo',
-              icon: Icons.title,
-              maxLength: 30,
-              onChanged: (value) => _validateForm(),
-              errorText: titleError,
-            ),
-            const SizedBox(height: 15),
-            CustomTextField(
-              controller: contentController,
-              label: 'Contenido',
-              icon: Icons.content_paste,
-              maxLines: 5,
-              maxLength: 300,
-              onChanged: (value) => _validateForm(),
-              errorText: contentError,
-            ),
-            const SizedBox(height: 15),
-            CustomTextField(
-              controller: categoryController,
-              label: 'Categoria',
-              icon: Icons.category,
-              maxLength: 15,
-              onChanged: (value) => _validateForm(),
-              errorText: categoryError,
-            ),
-            const SizedBox(height: 25),
-            CustomButton(
-              text: widget.note == null ? 'Crear' : 'Actualizar',
-              isEnabled: isFormValid,
-              onPressed: () {
-                final newNote = Note(
-                  id: widget.note?.id ?? '',
-                  title: titleController.text,
-                  content: contentController.text,
-                  category: categoryController.text,
-                  createdAt: widget.note?.createdAt ?? DateTime.now(),
-                );
-
-                if (widget.note == null) {
-                  context.read<NoteBloc>().addNote(newNote);
-                  _showSnack("Nota creada exitosamente", icon: Icons.check);
-                } else {
-                  context.read<NoteBloc>().updateNote(newNote);
-                  _showSnack(
-                    "Nota actualizada exitosamente",
-                    icon: Icons.check,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              CustomTextField(
+                controller: titleController,
+                label: 'Titulo',
+                icon: Icons.title,
+                maxLength: 30,
+                onChanged: (value) => _validateForm(),
+                errorText: titleError,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: contentController,
+                label: 'Contenido',
+                icon: Icons.content_paste,
+                maxLines: 5,
+                maxLength: 300,
+                onChanged: (value) => _validateForm(),
+                errorText: contentError,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: categoryController,
+                label: 'Categoria',
+                icon: Icons.category,
+                maxLength: 15,
+                onChanged: (value) => _validateForm(),
+                errorText: categoryError,
+              ),
+              const SizedBox(height: 25),
+              CustomButton(
+                text: widget.note == null ? 'Crear' : 'Actualizar',
+                isEnabled: isFormValid,
+                onPressed: () {
+                  final newNote = Note(
+                    id: widget.note?.id ?? '',
+                    title: titleController.text,
+                    content: contentController.text,
+                    category: categoryController.text,
+                    createdAt: widget.note?.createdAt ?? DateTime.now(),
                   );
-                }
-                Navigator.pop(context);
-              },
-            ),
-          ],
+
+                  if (widget.note == null) {
+                    context.read<NoteBloc>().addNote(newNote);
+                    _showSnack("Nota creada exitosamente", icon: Icons.check);
+                  } else {
+                    context.read<NoteBloc>().updateNote(newNote);
+                    _showSnack(
+                      "Nota actualizada exitosamente",
+                      icon: Icons.check,
+                    );
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

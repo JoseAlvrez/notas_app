@@ -4,11 +4,6 @@ import 'package:notas_app/models/note.dart';
 import 'package:notas_app/repositories/note_repository.dart';
 
 void main() {
-  /*test("Prueba simple con fake_cloud_firestore", () async {
-    final fakeFirestore = FakeFirebaseFirestore();
-    final noteRepository = NoteRepository(fakeFirestore);
-  });*/
-
   group('NoteRepository test', () {
     late NoteRepository noteRepository;
     late FakeFirebaseFirestore fakeFirestore;
@@ -16,9 +11,9 @@ void main() {
     const userId = 'fakeUserId';
 
     setUp(() {
-      // 1. Creamos la instancia en memoria
+      //Creamos la instancia en memoria
       fakeFirestore = FakeFirebaseFirestore();
-      // 2. Inyectamos en el repositorio
+      //Inyectamos en el repositorio
       noteRepository = NoteRepository(fakeFirestore);
     });
 
@@ -34,9 +29,9 @@ void main() {
             'category': 'Categoria1',
             'createdAt': DateTime.now(),
           });
-      // 4. Llamamos al método getNotes
+      //Llamamos al método getNotes
       final notesStream = noteRepository.getNotes(userId);
-      // Obtenemos la primera emisión del Stream
+      //Obtenemos la primera emisión del Stream
       final notesList = await notesStream.first;
 
       expect(notesList.length, 1);
@@ -69,7 +64,7 @@ void main() {
     });
 
     test('updateNote actualiza un documento existente', () async {
-      // 1. Creamos un doc manualmente
+      //Creamos un doc manualmente
       final docRef = await fakeFirestore
           .collection('users')
           .doc(userId)
@@ -83,7 +78,7 @@ void main() {
 
       final noteId = docRef.id;
 
-      // 2. Llamamos a updateNote
+      //Llamamos a updateNote
       final updatedNote = Note(
         id: noteId,
         title: 'Nota actualizada',
@@ -94,7 +89,7 @@ void main() {
 
       await noteRepository.updateNote(userId, updatedNote);
 
-      // 3. Revisamos en Firestore simulado
+      //Revisamos en Firestore simulado
       final snapshot =
           await fakeFirestore
               .collection('users')
@@ -108,7 +103,7 @@ void main() {
     });
 
     test("deleteNote elimina un documento existente", () async {
-      //1. Creamos  un doc
+      //Creamos  un doc
       final docRef = await fakeFirestore
           .collection('users')
           .doc(userId)
