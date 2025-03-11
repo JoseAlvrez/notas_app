@@ -13,66 +13,10 @@ import 'package:notas_app/widgets/custom_snackBart.dart';
 import 'package:notas_app/widgets/custom_textButton.dart';
 import 'package:notas_app/widgets/custom_text_field.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-
-  String? emailError;
-  String? passwordError;
-  bool isFormValid = false;
-
-  @override
-  void initState() {
-    super.initState();
-    emailController.addListener(_validateForm);
-    passwordController.addListener(_validateForm);
-  }
-
-  @override
-  void dispose() {
-    emailController.removeListener(_validateForm);
-    passwordController.removeListener(_validateForm);
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  void _validateForm() {
-    final email = emailController.text.trim();
-    final password = passwordController.text;
-
-    if (email.isNotEmpty) {
-      bool validEmail = RegExp(
-        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-      ).hasMatch(email);
-      emailError = validEmail ? null : "Formato de email inválido";
-    } else {
-      emailError = null;
-    }
-
-    if (password.isNotEmpty) {
-      bool validPassword = password.length >= 6;
-      passwordError =
-          validPassword
-              ? null
-              : "La contraseña debe tener al menos 6 caracteres";
-    } else {
-      passwordError = null;
-    }
-
-    setState(() {
-      isFormValid = email.isNotEmpty && password.isNotEmpty;
-    });
-  }
-
-  void _showFirebaseError(String msg) {
+  void _showError(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       customSnackBar(
         message: msg,
@@ -88,10 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
       create: (_) => AuthBloc(AuthRepository()),
       child: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthAuthenticated) {
+          if (state.user != null && state.lastAction == AuthAction.signIn) {
             Navigator.pushReplacementNamed(context, '/home');
-          } else if (state is AuthError) {
-            _showFirebaseError(state.message);
+          } else if (state.errorMessage != null) {
+            _showError(context, state.errorMessage!);
           }
         },
         builder: (context, state) {
@@ -113,63 +57,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset(
-                              'assets/images/registro-en-linea.png',
-                              height: 150,
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              "Bienvenidos App Notas",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 25,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
+                            _loginHeader(),
                             const SizedBox(height: 8),
-                            CustomCard(
-                              elevation: 10,
-                              child: Column(
-                                children: [
-                                  const SizedBox(height: 10),
-                                  CustomTextField(
-                                    controller: emailController,
-                                    label: 'Email',
-                                    icon: Icons.email_outlined,
-                                    onChanged: (value) => _validateForm(),
-                                    errorText: emailError,
-                                  ),
-                                  const SizedBox(height: 15),
-                                  CustomTextField(
-                                    controller: passwordController,
-                                    label: 'Contraseña',
-                                    obscureText: true,
-                                    icon: Icons.lock_outlined,
-                                    onChanged: (value) => _validateForm(),
-                                    errorText: passwordError,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Builder(
-                                    builder: (context) {
-                                      return CustomButton(
-                                        text: 'Iniciar sesión',
-                                        isEnabled: isFormValid,
-                                        onPressed: () {
-                                          if (!isFormValid) return;
-                                          context.read<AuthBloc>().add(
-                                            SignInRequested(
-                                              emailController.text,
-                                              passwordController.text,
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 20),
-                                ],
-                              ),
-                            ),
+                            _loginFormCard(context),
                             const SizedBox(height: 20),
                             CustomTextbutton(
                               text: "¿No tienes cuenta? Regístrate",
@@ -178,12 +68,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 showDialog(
                                   barrierDismissible: false,
                                   context: context,
-                                  builder:
-                                      (context) => BlocProvider(
-                                        create:
-                                            (_) => AuthBloc(AuthRepository()),
-                                        child: const RegisterDialogScreen(),
-                                      ),
+                                  builder: (_) {
+                                    return BlocProvider.value(
+                                      value: context.read<AuthBloc>(),
+                                      child: const RegisterDialogScreen(),
+                                    );
+                                  },
                                 );
                               },
                             ),
@@ -193,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                if (state is AuthLoading)
+                if (state.isLoading)
                   Container(
                     // ignore: deprecated_member_use
                     color: Colors.black.withOpacity(0.3),
@@ -203,6 +93,67 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _loginHeader() {
+    return Column(
+      children: [
+        Image.asset('assets/images/registro-en-linea.png', height: 150),
+        const SizedBox(height: 20),
+        const Text(
+          'Bienvenidos App Notas',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _loginFormCard(BuildContext context) {
+    final authBloc = context.read<AuthBloc>();
+    return CustomCard(
+      elevation: 10,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            return Column(
+              children: [
+                CustomTextField(
+                  //controller: emailController,
+                  label: 'email',
+                  icon: Icons.email_outlined,
+                  onChanged: (value) {
+                    authBloc.add(EmailChanged(value));
+                  },
+                  errorText: state.emailError,
+                ),
+                const SizedBox(height: 15),
+                CustomTextField(
+                  //controller: passwordController,
+                  label: 'Contraseña',
+                  icon: Icons.lock_outlined,
+                  obscureText: true,
+                  onChanged: (value) {
+                    authBloc.add(PasswordChanged(value));
+                  },
+                  errorText: state.passwordError,
+                ),
+                const SizedBox(height: 20),
+                CustomButton(
+                  text: 'Iniciar sesión',
+                  isEnabled: state.isFormValid,
+                  onPressed: () {
+                    if (!state.isFormValid) return;
+                    authBloc.add(SignInRequested(state.email, state.password));
+                  },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

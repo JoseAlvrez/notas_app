@@ -32,76 +32,129 @@ void main() {
     authBloc.close();
   });
 
-  test('el estado inicial debe ser AuthInitial', () {
-    expect(authBloc.state, isA<AuthInitial>());
+  test('el estado inicial debe ser AuthState con valores por defecto', () {
+    expect(authBloc.state.isLoading, false);
+    expect(authBloc.state.user, null);
+    expect(authBloc.state.errorMessage, null);
   });
 
   //test cuando el resgistro(creacion) de usuario es existoso
   group('SignUpRequested', () {
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthAuthenticated] cuando el registro se realiza correctamente',
+      'emits [AuthState con isLoading=true, AuthState con user != null] cuando el registro de usuario se realiza correctamente',
       build: () {
         when(
-          () => mockAuthRepository.signUp('test@email.com', 'password'),
+          () => mockAuthRepository.signUp('jolualca-12@hotmail.com', '123456'),
         ).thenAnswer((_) async => mockUser);
         return authBloc;
       },
-      act: (bloc) => bloc.add(SignUpRequested('test@email.com', 'password')),
-      expect: () => [isA<AuthLoading>(), isA<AuthAuthenticated>()],
+      act:
+          (bloc) =>
+              bloc.add(SignUpRequested('jolualca-12@hotmail.com', '123456')),
+      expect:
+          () => [
+            // 1) Estado de carga
+            isA<AuthState>().having((s) => s.isLoading, 'isLoading', true),
+            // 2) Estado con user != null y isLoading=false
+            isA<AuthState>()
+                .having((s) => s.isLoading, 'isLoading', false)
+                .having((s) => s.user, 'user', mockUser),
+          ],
     );
 
     //test cuando el registro falla
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthError] cuando el registro falla',
+      'emits [AuthState con isLoading=true, AuthState con errorMessage=...] cuando el registro de usuario falla',
       build: () {
         when(
-          () => mockAuthRepository.signUp('test@email.com', 'password'),
+          () => mockAuthRepository.signUp('jolualca-12@hotmail.com', '123456'),
         ).thenThrow(MockFirebaseAuthException('Error de registro'));
         return authBloc;
       },
-      act: (bloc) => bloc.add(SignUpRequested('test@email.com', 'password')),
-      expect: () => [isA<AuthLoading>(), isA<AuthError>()],
+      act:
+          (bloc) =>
+              bloc.add(SignUpRequested('jolualca-12@hotmail.com', '123456')),
+      expect:
+          () => [
+            // Primer estado: isLoading=true, sin errorMessage
+            isA<AuthState>()
+                .having((s) => s.isLoading, 'isLoading', true)
+                .having((s) => s.errorMessage, 'errorMessage', null),
+
+            // Segundo estado: isLoading=false, errorMessage='Error de registro'
+            isA<AuthState>()
+                .having((s) => s.isLoading, 'isLoading', false)
+                .having(
+                  (s) => s.errorMessage,
+                  'errorMessage',
+                  'Error de registro',
+                ),
+          ],
     );
   });
 
   //test cuando el usuario inicio de sesion con exito
   group('SignInRequested', () {
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthAuthenticated] si el registro se realiza correctamente',
+      'emits [AuthState con isLoading=true, AuthState con user != null] si el inicio de sesión es exitoso',
       build: () {
         when(
-          () => mockAuthRepository.signIn('test@email.com', 'password'),
+          () => mockAuthRepository.signIn('jolualca-12@hotmail.com', '123456'),
         ).thenAnswer((_) async => mockUser);
         return authBloc;
       },
-      act: (bloc) => bloc.add(SignInRequested('test@email.com', 'password')),
-      expect: () => [isA<AuthLoading>(), isA<AuthAuthenticated>()],
+      act:
+          (bloc) =>
+              bloc.add(SignInRequested('jolualca-12@hotmail.com', '123456')),
+      expect:
+          () => [
+            // 1) Estado de carga
+            isA<AuthState>().having((s) => s.isLoading, 'isLoading', true),
+            // 2) Estado con user != null y isLoading=false
+            isA<AuthState>()
+                .having((s) => s.isLoading, 'isLoading', false)
+                .having((s) => s.user, 'user', mockUser),
+          ],
     );
 
     //test cuando falla el inicio de sesion
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthError] cuando falla el inicio de sesión',
+      'emits [AuthState con isLoading=true, AuthState con errorMessage=...] cuando falla el inicio de sesión',
       build: () {
         when(
-          () => mockAuthRepository.signIn('test@email.com', 'password'),
+          () => mockAuthRepository.signIn('jolualca-12@hotmail.com', '123456'),
         ).thenThrow(MockFirebaseAuthException('Error al iniciar sesión'));
         return authBloc;
       },
-      act: (bloc) => bloc.add(SignInRequested('test@email.com', 'password')),
-      expect: () => [isA<AuthLoading>(), isA<AuthError>()],
+      act:
+          (bloc) =>
+              bloc.add(SignInRequested('jolualca-12@hotmail.com', '123456')),
+      expect:
+          () => [
+            isA<AuthState>().having((s) => s.isLoading, 'isLoading', true),
+
+            //.having((s) => s.errorMessage, 'errorMessage', null),
+            isA<AuthState>()
+                .having((s) => s.isLoading, 'isLoading', false)
+                .having(
+                  (s) => s.errorMessage,
+                  'errorMessage',
+                  'Error al iniciar sesión',
+                ),
+          ],
     );
   });
 
   // test de cierre de sesion
   group('SignOutRequested', () {
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthUnauthenticated] si se cierra sesión correctamente',
+      'emits [AuthState con isLoading=true, luego user=null] cuando se cierra sesión correctamente',
       build: () {
         when(() => mockAuthRepository.signOut()).thenAnswer((_) async {});
         return authBloc;
       },
       act: (bloc) => bloc.add(SignOutRequested()),
-      expect: () => [isA<AuthUnauthenticated>()],
+      expect: () => [isA<AuthState>().having((s) => s.user, 'user', null)],
     );
   });
 
