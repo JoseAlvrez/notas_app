@@ -122,7 +122,6 @@ class LoginScreen extends StatelessWidget {
             return Column(
               children: [
                 CustomTextField(
-                  //controller: emailController,
                   label: 'email',
                   icon: Icons.email_outlined,
                   onChanged: (value) {
@@ -132,7 +131,6 @@ class LoginScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
                 CustomTextField(
-                  //controller: passwordController,
                   label: 'Contraseña',
                   icon: Icons.lock_outlined,
                   obscureText: true,

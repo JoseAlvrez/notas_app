@@ -18,7 +18,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   //esto para obtener el usuario actual públicamente
   User? get currentUser => _authRepository.currentUser;
 
-  // validacion de formulario
   void _onEmailChanged(EmailChanged event, Emitter<AuthState> emit) {
     final email = event.email.trim();
     String? emailError;
@@ -37,7 +36,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: email,
         emailError: emailError,
         isFormValid: isFormValid,
-        // Limpiamos errorMessage cuando el usuario empieza a escribir
         errorMessage: null,
       ),
     );

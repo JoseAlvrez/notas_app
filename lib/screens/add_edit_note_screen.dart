@@ -1,6 +1,10 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:notas_app/blocs/note_bloc.dart';
+import 'package:notas_app/blocs/note_bloc/note_bloc.dart';
+import 'package:notas_app/blocs/note_bloc/note_event.dart';
+import 'package:notas_app/blocs/note_bloc/note_state.dart';
 import 'package:notas_app/models/note.dart';
 import 'package:notas_app/widgets/custom_app_bart.dart';
 import 'package:notas_app/widgets/custom_button.dart';
@@ -17,71 +21,27 @@ class AddEditNoteScreen extends StatefulWidget {
 }
 
 class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
-  final titleController = TextEditingController();
-  final contentController = TextEditingController();
-  final categoryController = TextEditingController();
-
-  String? titleError;
-  String? contentError;
-  String? categoryError;
-  bool isFormValid = false;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.note != null) {
-      titleController.text = widget.note!.title;
-      contentController.text = widget.note!.content;
-      categoryController.text = widget.note!.category;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      final bloc = context.read<NoteBloc>();
+      //Reseteamos el formulario para no arrastrar datos de la edición anterior
+      bloc.add(const ResetForm());
+      //Si es edición, asignamos los valores de la nota
+      if (widget.note != null) {
+        bloc.add(TitleChanged(widget.note!.title));
+        bloc.add(ContentChanged(widget.note!.content));
+        bloc.add(CategoryChanged(widget.note!.category));
+      }
+      _initialized = true;
     }
-    titleController.addListener(_validateForm);
-    contentController.addListener(_validateForm);
-    categoryController.addListener(_validateForm);
-
-    _validateForm();
-  }
-
-  @override
-  void dispose() {
-    titleController.removeListener(_validateForm);
-    contentController.removeListener(_validateForm);
-    categoryController.removeListener(_validateForm);
-    titleController.dispose();
-    contentController.dispose();
-    categoryController.dispose();
-    super.dispose();
-  }
-
-  void _validateForm() {
-    final title = titleController.text.trim();
-    final content = contentController.text.trim();
-    final category = categoryController.text.trim();
-
-    if (title.isNotEmpty) {
-      titleError = null;
-    } else {
-      titleError = null;
-    }
-
-    if (content.isNotEmpty) {
-      contentError = null;
-    } else {
-      contentError = null;
-    }
-
-    if (category.isNotEmpty) {
-      categoryError = null;
-    } else {
-      categoryError = null;
-    }
-
-    setState(() {
-      isFormValid =
-          title.isNotEmpty && content.isNotEmpty && category.isNotEmpty;
-    });
   }
 
   void _showSnack(
+    BuildContext context,
     String msg, {
     Color backgroundColor = Colors.green,
     IconData? icon,
@@ -104,65 +64,83 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              CustomTextField(
-                controller: titleController,
-                label: 'Titulo',
-                icon: Icons.title,
-                maxLength: 30,
-                onChanged: (value) => _validateForm(),
-                errorText: titleError,
-              ),
-              const SizedBox(height: 15),
-              CustomTextField(
-                controller: contentController,
-                label: 'Contenido',
-                icon: Icons.content_paste,
-                maxLines: 5,
-                maxLength: 300,
-                onChanged: (value) => _validateForm(),
-                errorText: contentError,
-              ),
-              const SizedBox(height: 15),
-              CustomTextField(
-                controller: categoryController,
-                label: 'Categoria',
-                icon: Icons.category,
-                maxLength: 15,
-                onChanged: (value) => _validateForm(),
-                errorText: categoryError,
-              ),
-              const SizedBox(height: 25),
-              CustomButton(
-                text: widget.note == null ? 'Crear' : 'Actualizar',
-                isEnabled: isFormValid,
-                onPressed: () {
-                  final newNote = Note(
-                    id: widget.note?.id ?? '',
-                    title: titleController.text,
-                    content: contentController.text,
-                    category: categoryController.text,
-                    createdAt: widget.note?.createdAt ?? DateTime.now(),
-                  );
-
-                  if (widget.note == null) {
-                    context.read<NoteBloc>().addNote(newNote);
-                    _showSnack("Nota creada exitosamente", icon: Icons.check);
-                  } else {
-                    context.read<NoteBloc>().updateNote(newNote);
-                    _showSnack(
-                      "Nota actualizada exitosamente",
-                      icon: Icons.check,
-                    );
-                  }
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+          child: BlocBuilder<NoteBloc, NoteState>(
+            builder: (context, state) {
+              return Column(children: [_addEditNoteForm(context, state)]);
+            },
           ),
         ),
       ),
+    );
+  }
+
+  Widget _addEditNoteForm(BuildContext context, NoteState state) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CustomTextField(
+          text: state.editingTitle,
+          label: 'Titulo',
+          icon: Icons.title,
+          maxLength: 30,
+          onChanged: (value) {
+            context.read<NoteBloc>().add(TitleChanged(value));
+          },
+          errorText: state.titleError,
+        ),
+        const SizedBox(height: 15),
+        CustomTextField(
+          text: state.editingContent,
+          label: 'Contenido',
+          icon: Icons.content_paste,
+          maxLines: 5,
+          maxLength: 300,
+          onChanged: (value) {
+            context.read<NoteBloc>().add(ContentChanged(value));
+          },
+          errorText: state.contentError,
+        ),
+        const SizedBox(height: 15),
+        CustomTextField(
+          text: state.editingCategory,
+          label: 'Categoría',
+          icon: Icons.category,
+          maxLength: 15,
+          onChanged: (value) {
+            context.read<NoteBloc>().add(CategoryChanged(value));
+          },
+          errorText: state.categoryError,
+        ),
+        const SizedBox(height: 25),
+        CustomButton(
+          text: widget.note == null ? 'Crear' : 'Actualizar',
+          onPressed: () {
+            final newNote = Note(
+              id: widget.note?.id ?? '',
+              title: state.editingTitle,
+              content: state.editingContent,
+              category: state.editingCategory,
+              createdAt: widget.note?.createdAt ?? DateTime.now(),
+            );
+            if (widget.note == null) {
+              context.read<NoteBloc>().add(AddNote(newNote));
+              _showSnack(
+                context,
+                "Nota creada exitosamente",
+                icon: Icons.check,
+              );
+            } else {
+              context.read<NoteBloc>().add(UpdateNote(newNote));
+              _showSnack(
+                context,
+                "Nota actualizada exitosamente",
+                icon: Icons.check,
+              );
+            }
+            Navigator.pop(context);
+          },
+        ),
+      ],
     );
   }
 }

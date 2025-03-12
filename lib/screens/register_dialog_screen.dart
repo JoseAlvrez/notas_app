@@ -33,7 +33,7 @@ class RegisterDialogScreen extends StatelessWidget {
             icon: Icons.check,
           );
           Future.delayed(const Duration(seconds: 1), () {
-            Navigator.pop(context); // cierra el diálogo
+            Navigator.pop(context);
           });
         } else if (state.errorMessage != null) {
           _showSnack(
@@ -50,26 +50,6 @@ class RegisterDialogScreen extends StatelessWidget {
         return CustomDialog(
           title: 'Registrarse',
           contect: _registerDialogContent(context),
-          /* Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CustomTextField(
-                label: 'Email',
-                icon: Icons.email_outlined,
-                onChanged: (value) => bloc.add(EmailChanged(value)),
-                errorText: state.emailError,
-              ),
-              const SizedBox(height: 10),
-              CustomTextField(
-                label: 'Contraseña',
-                icon: Icons.lock_outlined,
-                obscureText: true,
-                onChanged: (value) => bloc.add(PasswordChanged(value)),
-                errorText: state.passwordError,
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),*/
           primaryButtonText: 'Registrar',
           onPrimaryPressed:
               state.isFormValid

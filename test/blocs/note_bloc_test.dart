@@ -1,6 +1,7 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:notas_app/blocs/note_bloc.dart';
+import 'package:notas_app/blocs/note_bloc/note_bloc.dart';
+import 'package:notas_app/blocs/note_bloc/note_event.dart';
 import 'package:notas_app/models/note.dart';
 import 'package:notas_app/repositories/note_repository.dart';
 
@@ -15,11 +16,11 @@ void main() {
     setUp(() {
       fakeFirestore = FakeFirebaseFirestore();
       noteRepository = NoteRepository(fakeFirestore);
-      noteBloc = NoteBloc(noteRepository, userId);
+      noteBloc = NoteBloc(noteRepository: noteRepository, userId: userId);
     });
 
     test(
-      'loadNotes emite la lista de notas cuando se añaden documentos',
+      'loadNotes, emite la lista de notas cuando se añaden documentos',
       () async {
         //Creamos manualmente un doc en Firestore
         await fakeFirestore
@@ -34,19 +35,21 @@ void main() {
             });
 
         //Llammos a loadNotes
-        noteBloc.loadNotes();
+        noteBloc.add(LoadNotes(userId));
         await Future.delayed(const Duration(milliseconds: 100));
 
+        // Verificamos el estado actual del bloc
         final currentState = noteBloc.state;
-        expect(currentState.length, 1);
-        expect(currentState[0].title, 'Nota1');
-        expect(currentState[0].content, 'Contenido1');
-        expect(currentState[0].category, 'Cat1');
+        // Como noteBloc.state es un NoteState, accedemos a la lista con currentState.allNotes
+        expect(currentState.allNotes.length, 1);
+        expect(currentState.allNotes[0].title, 'Nota1');
+        expect(currentState.allNotes[0].content, 'Contenido1');
+        expect(currentState.allNotes[0].category, 'Cat1');
       },
     );
 
-    test('addNote añade una nota y el bloc emite la nueva lista', () async {
-      // Al llamar addNote, se crea el doc en Firestore
+    test('addNote, añade una nota y el bloc emite la nueva lista', () async {
+      // Creamos la nota, se crea el doc en Firestore
       final note = Note(
         id: '',
         title: 'Nota2',
@@ -55,17 +58,19 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      //Primero llamamos loadNotes para que el bloc escuche los cambios
-      noteBloc.loadNotes();
+      // Iniciamos la escucha de notas
+      noteBloc.add(LoadNotes(userId));
 
-      noteBloc.addNote(note);
+      // Disparamos el evento de agregar nota
+      noteBloc.add(AddNote(note));
       await Future.delayed(const Duration(milliseconds: 100));
 
-      expect(noteBloc.state.length, 1);
-      expect(noteBloc.state[0].title, 'Nota2');
+      final currentState = noteBloc.state;
+      expect(currentState.allNotes.length, 1);
+      expect(currentState.allNotes[0].title, 'Nota2');
     });
 
-    test('updateNote actualiza una nota y emite la nueva lista', () async {
+    test('updateNote, actualiza una nota y emite la nueva lista', () async {
       //Creamos un doc manualmente
       final docRef = await fakeFirestore
           .collection('users')
@@ -80,10 +85,10 @@ void main() {
       final existingId = docRef.id;
 
       //Empezamos a escuchar noteBloc
-      noteBloc.loadNotes();
+      noteBloc.add(LoadNotes(userId));
       await Future.delayed(const Duration(milliseconds: 50));
 
-      //Actualizamos
+      //Actualizamos la nota
       final updatedNote = Note(
         id: existingId,
         title: 'Nota3 actualizada',
@@ -91,18 +96,19 @@ void main() {
         category: 'Cat3 new',
         createdAt: DateTime.now(),
       );
-      noteBloc.updateNote(updatedNote);
+
+      noteBloc.add(UpdateNote(updatedNote));
       await Future.delayed(const Duration(milliseconds: 100));
 
       //Verificamos en el estado
       final currentState = noteBloc.state;
-      expect(currentState.length, 1);
-      expect(currentState[0].title, 'Nota3 actualizada');
-      expect(currentState[0].content, 'Contenido3 modificado');
-      expect(currentState[0].category, 'Cat3 new');
+      expect(currentState.allNotes.length, 1);
+      expect(currentState.allNotes[0].title, 'Nota3 actualizada');
+      expect(currentState.allNotes[0].content, 'Contenido3 modificado');
+      expect(currentState.allNotes[0].category, 'Cat3 new');
     });
 
-    test('deleteNote elimina una nota y emite la nueva lista', () async {
+    test('deleteNote, elimina una nota y emite la nueva lista', () async {
       //Creamos un doc
       final docRef = await fakeFirestore
           .collection('users')
@@ -117,16 +123,16 @@ void main() {
       final existingId = docRef.id;
 
       //Empezamos a escuchar noteBloc
-      noteBloc.loadNotes();
+      noteBloc.add(LoadNotes(userId));
       await Future.delayed(const Duration(milliseconds: 50));
 
-      //Eliminamos la nota
-      noteBloc.deleteNote(existingId);
+      //Disparamos el evento para eliminar la nota
+      noteBloc.add(DeleteNote(existingId));
       await Future.delayed(const Duration(milliseconds: 100));
 
       //Verificamos que ya no haya notas
       final currentState = noteBloc.state;
-      expect(currentState.length, 0);
+      expect(currentState.allNotes.length, 0);
     });
   });
 }
