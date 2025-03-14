@@ -10,7 +10,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc(this._authRepository) : super(AuthState()) {
     on<EmailChanged>(_onEmailChanged);
     on<PasswordChanged>(_onPasswordChanged);
-    on<SignUpRequested>(_onSignUpRequested);
+    //on<SignUpRequested>(_onSignUpRequested);
     on<SignInRequested>(_onSignInRequested);
     on<SignOutRequested>(_onSignOutRequested);
   }
@@ -62,7 +62,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   // --- SIGN UP ---
-  Future<void> _onSignUpRequested(
+  /*Future<void> _onSignUpRequested(
     SignUpRequested event,
     Emitter<AuthState> emit,
   ) async {
@@ -77,7 +77,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final user = await _authRepository.signUp(event.email, event.password);
       if (user != null) {
         // Se registró
-        emit(state.copyWith(isLoading: false, user: user));
+        //await _authRepository.signOut();
+        emit(state.copyWith(isLoading: false, user: null));
       } else {
         emit(
           state.copyWith(
@@ -94,7 +95,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     }
-  }
+  }*/
 
   // --- SIGN IN ---
   Future<void> _onSignInRequested(
@@ -137,6 +138,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     await _authRepository.signOut();
     // Borramos user para indicar que no hay sesión
-    emit(state.copyWith(user: null, errorMessage: null));
+    emit(
+      state.copyWith(
+        user: null,
+        errorMessage: null,
+        lastAction: AuthAction.signOut,
+      ),
+    );
   }
 }

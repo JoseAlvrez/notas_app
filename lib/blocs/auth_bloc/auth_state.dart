@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-enum AuthAction { none, signIn, signUp }
+enum AuthAction { none, signIn, signUp, signOut }
 
 class AuthState extends Equatable {
   final bool isLoading;

@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notas_app/blocs/note_bloc/note_event.dart';
 import 'package:notas_app/blocs/note_bloc/note_state.dart';
+import 'package:notas_app/models/note.dart';
 import 'package:notas_app/repositories/note_repository.dart';
 
 class NoteBloc extends Bloc<NoteEvent, NoteState> {
   final NoteRepository noteRepository;
   final String userId;
+
+  // Guarda la suscripción
+  StreamSubscription<List<Note>>? _notesSubscription;
 
   NoteBloc({required this.noteRepository, required this.userId})
     : super(const NoteState()) {
@@ -27,9 +33,12 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
 
   void _onLoadNotes(LoadNotes event, Emitter<NoteState> emit) {
     // Escuchamos el stream de notas del repositorio
-    noteRepository.getNotes(event.userId).listen((notes) {
+    // Guardamos la suscripción
+    _notesSubscription = noteRepository.getNotes(event.userId).listen((notes) {
       // Cada vez que lleguen notas nuevas, disparamos un evento "NotesUpdated"
-      add(NotesUpdated(notes));
+      if (!isClosed) {
+        add(NotesUpdated(notes));
+      }
     });
   }
 
@@ -131,5 +140,11 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
         isFormValid: false,
       ),
     );
+  }
+
+  @override
+  Future<void> close() {
+    _notesSubscription?.cancel();
+    return super.close();
   }
 }

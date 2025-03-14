@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:notas_app/blocs/auth_bloc/auth_bloc.dart';
 import 'package:notas_app/blocs/auth_bloc/auth_event.dart';
 import 'package:notas_app/blocs/auth_bloc/auth_state.dart';
+import 'package:notas_app/blocs/register_bloc/register_bloc.dart';
 import 'package:notas_app/repositories/auth_repository.dart';
 import 'package:notas_app/screens/register_dialog_screen.dart';
 import 'package:notas_app/widgets/custom_app_bart.dart';
@@ -28,72 +29,71 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => AuthBloc(AuthRepository()),
-      child: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state.user != null && state.lastAction == AuthAction.signIn) {
-            Navigator.pushReplacementNamed(context, '/home');
-          } else if (state.errorMessage != null) {
-            _showError(context, state.errorMessage!);
-          }
-        },
-        builder: (context, state) {
-          return Scaffold(
-            backgroundColor: Colors.grey[200],
-            appBar: const CustomAppBar(isVisible: false),
-            body: Stack(
-              children: [
-                SingleChildScrollView(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight:
-                              MediaQuery.of(context).size.height -
-                              kToolbarHeight,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _loginHeader(),
-                            const SizedBox(height: 8),
-                            _loginFormCard(context),
-                            const SizedBox(height: 20),
-                            CustomTextbutton(
-                              text: "¿No tienes cuenta? Regístrate",
-                              textColor: Colors.black54,
-                              onPressed: () {
-                                showDialog(
-                                  barrierDismissible: false,
-                                  context: context,
-                                  builder: (_) {
-                                    return BlocProvider.value(
-                                      value: context.read<AuthBloc>(),
-                                      child: const RegisterDialogScreen(),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ],
-                        ),
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state.user != null && state.lastAction == AuthAction.signIn) {
+          Navigator.pushReplacementNamed(context, '/');
+        } else if (state.errorMessage != null) {
+          _showError(context, state.errorMessage!);
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: Colors.grey[200],
+          appBar: const CustomAppBar(isVisible: false),
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight:
+                            MediaQuery.of(context).size.height - kToolbarHeight,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _loginHeader(),
+                          const SizedBox(height: 8),
+                          _loginFormCard(context),
+                          const SizedBox(height: 20),
+                          CustomTextbutton(
+                            text: "¿No tienes cuenta? Regístrate",
+                            textColor: Colors.black54,
+                            onPressed: () {
+                              showDialog(
+                                barrierDismissible: false,
+                                context: context,
+                                builder: (_) {
+                                  return BlocProvider(
+                                    create:
+                                        (_) => RegisterBloc(
+                                          context.read<AuthRepository>(),
+                                        ),
+                                    child: const RegisterDialogScreen(),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                if (state.isLoading)
-                  Container(
-                    // ignore: deprecated_member_use
-                    color: Colors.black.withOpacity(0.3),
-                    child: const CustomProgressIndicator(),
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+              if (state.isLoading)
+                Container(
+                  // ignore: deprecated_member_use
+                  color: Colors.black.withOpacity(0.3),
+                  child: const CustomProgressIndicator(),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
